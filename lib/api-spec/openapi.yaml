@@ -1,0 +1,749 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: F1 Dashboard API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: standings
+    description: Championship standings
+  - name: races
+    description: Race schedule and results
+  - name: drivers
+    description: Driver information
+  - name: constructors
+    description: Constructor information
+  - name: telemetry
+    description: Telemetry and lap analysis
+  - name: predictions
+    description: Race outcome predictions
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /standings/drivers:
+    get:
+      operationId: getDriverStandings
+      tags: [standings]
+      summary: Get current driver championship standings
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Season year (defaults to current)
+      responses:
+        "200":
+          description: Driver standings list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverStanding"
+
+  /standings/constructors:
+    get:
+      operationId: getConstructorStandings
+      tags: [standings]
+      summary: Get current constructor championship standings
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Season year (defaults to current)
+      responses:
+        "200":
+          description: Constructor standings list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConstructorStanding"
+
+  /races/schedule:
+    get:
+      operationId: getRaceSchedule
+      tags: [races]
+      summary: Get race calendar for a season
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Season year (defaults to current)
+      responses:
+        "200":
+          description: Race schedule
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Race"
+
+  /races/next:
+    get:
+      operationId: getNextRace
+      tags: [races]
+      summary: Get the upcoming next race with details
+      responses:
+        "200":
+          description: Next race info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NextRace"
+
+  /races/{round}/results:
+    get:
+      operationId: getRaceResults
+      tags: [races]
+      summary: Get race results for a specific round (current season)
+      parameters:
+        - name: round
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Race results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RaceResult"
+
+  /races/{round}/qualifying:
+    get:
+      operationId: getQualifyingResults
+      tags: [races]
+      summary: Get qualifying results for a specific round (current season)
+      parameters:
+        - name: round
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Qualifying results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QualifyingResult"
+
+  /races/{round}/laps:
+    get:
+      operationId: getRaceLaps
+      tags: [races]
+      summary: Get lap times for a race (current season)
+      parameters:
+        - name: round
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lap time data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LapData"
+
+  /drivers:
+    get:
+      operationId: getDrivers
+      tags: [drivers]
+      summary: Get all drivers for a season
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Driver list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+
+  /drivers/{driverId}/results:
+    get:
+      operationId: getDriverResults
+      tags: [drivers]
+      summary: Get all race results for a driver in the current season
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Driver season results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RaceResult"
+
+  /telemetry/{round}:
+    get:
+      operationId: getTelemetry
+      tags: [telemetry]
+      summary: Get telemetry and performance data for a race (current season)
+      parameters:
+        - name: round
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Telemetry analysis data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryData"
+
+  /predictions/winner:
+    post:
+      operationId: predictRaceWinner
+      tags: [predictions]
+      summary: Predict race winner based on factors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionInput"
+      responses:
+        "200":
+          description: Prediction results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionResult"
+
+  /season/summary:
+    get:
+      operationId: getSeasonSummary
+      tags: [standings]
+      summary: Get high-level season summary stats
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Season summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonSummary"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Driver:
+      type: object
+      required: [driverId, code, givenName, familyName, nationality, constructorId, constructorName, constructorColor, number]
+      properties:
+        driverId:
+          type: string
+        code:
+          type: string
+        givenName:
+          type: string
+        familyName:
+          type: string
+        nationality:
+          type: string
+        dateOfBirth:
+          type: ["string", "null"]
+        permanentNumber:
+          type: ["string", "null"]
+        number:
+          type: integer
+        constructorId:
+          type: string
+        constructorName:
+          type: string
+        constructorColor:
+          type: string
+
+    DriverStanding:
+      type: object
+      required: [position, points, wins, driver]
+      properties:
+        position:
+          type: integer
+        points:
+          type: number
+        wins:
+          type: integer
+        driver:
+          $ref: "#/components/schemas/Driver"
+
+    Constructor:
+      type: object
+      required: [constructorId, name, nationality, color]
+      properties:
+        constructorId:
+          type: string
+        name:
+          type: string
+        nationality:
+          type: string
+        color:
+          type: string
+
+    ConstructorStanding:
+      type: object
+      required: [position, points, wins, constructor]
+      properties:
+        position:
+          type: integer
+        points:
+          type: number
+        wins:
+          type: integer
+        constructor:
+          $ref: "#/components/schemas/Constructor"
+
+    Race:
+      type: object
+      required: [round, raceName, circuitName, country, locality, date, season]
+      properties:
+        round:
+          type: integer
+        season:
+          type: string
+        raceName:
+          type: string
+        circuitId:
+          type: string
+        circuitName:
+          type: string
+        country:
+          type: string
+        locality:
+          type: string
+        date:
+          type: string
+        time:
+          type: ["string", "null"]
+        fp1Date:
+          type: ["string", "null"]
+        fp2Date:
+          type: ["string", "null"]
+        fp3Date:
+          type: ["string", "null"]
+        qualifyingDate:
+          type: ["string", "null"]
+        sprintDate:
+          type: ["string", "null"]
+        isCompleted:
+          type: boolean
+        winner:
+          type: ["string", "null"]
+        winnerConstructor:
+          type: ["string", "null"]
+
+    NextRace:
+      type: object
+      required: [race, daysUntil, sessionSchedule]
+      properties:
+        race:
+          $ref: "#/components/schemas/Race"
+        daysUntil:
+          type: integer
+        sessionSchedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionInfo"
+        circuitStats:
+          $ref: "#/components/schemas/CircuitStats"
+
+    SessionInfo:
+      type: object
+      required: [name, date]
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        time:
+          type: ["string", "null"]
+
+    CircuitStats:
+      type: object
+      properties:
+        laps:
+          type: ["integer", "null"]
+        length:
+          type: ["number", "null"]
+        lapRecord:
+          type: ["string", "null"]
+        lapRecordHolder:
+          type: ["string", "null"]
+        lapRecordYear:
+          type: ["integer", "null"]
+
+    RaceResult:
+      type: object
+      required: [position, driverId, driverCode, driverName, constructorId, constructorName, constructorColor, laps, status, points]
+      properties:
+        position:
+          type: ["integer", "null"]
+        grid:
+          type: ["integer", "null"]
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        driverName:
+          type: string
+        constructorId:
+          type: string
+        constructorName:
+          type: string
+        constructorColor:
+          type: string
+        laps:
+          type: integer
+        status:
+          type: string
+        points:
+          type: number
+        time:
+          type: ["string", "null"]
+        fastestLap:
+          type: ["string", "null"]
+        fastestLapRank:
+          type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        raceName:
+          type: ["string", "null"]
+        raceDate:
+          type: ["string", "null"]
+
+    QualifyingResult:
+      type: object
+      required: [position, driverId, driverCode, driverName, constructorId, constructorName, constructorColor]
+      properties:
+        position:
+          type: integer
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        driverName:
+          type: string
+        constructorId:
+          type: string
+        constructorName:
+          type: string
+        constructorColor:
+          type: string
+        q1:
+          type: ["string", "null"]
+        q2:
+          type: ["string", "null"]
+        q3:
+          type: ["string", "null"]
+
+    LapData:
+      type: object
+      required: [driverId, driverCode, constructorColor, laps]
+      properties:
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        constructorColor:
+          type: string
+        laps:
+          type: array
+          items:
+            $ref: "#/components/schemas/LapTime"
+
+    LapTime:
+      type: object
+      required: [lap, time, position]
+      properties:
+        lap:
+          type: integer
+        time:
+          type: string
+        position:
+          type: integer
+        timeMs:
+          type: ["number", "null"]
+
+    TelemetryData:
+      type: object
+      required: [round, raceName, drivers, lapComparison, sectorAnalysis, tyreSummary]
+      properties:
+        round:
+          type: integer
+        raceName:
+          type: string
+        drivers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverTelemetry"
+        lapComparison:
+          type: array
+          items:
+            $ref: "#/components/schemas/LapComparison"
+        sectorAnalysis:
+          $ref: "#/components/schemas/SectorAnalysis"
+        tyreSummary:
+          type: array
+          items:
+            $ref: "#/components/schemas/TyreSummary"
+
+    DriverTelemetry:
+      type: object
+      required: [driverId, driverCode, constructorName, constructorColor, avgLapTime, fastestLap, consistency, topSpeed, racePace]
+      properties:
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        constructorName:
+          type: string
+        constructorColor:
+          type: string
+        avgLapTime:
+          type: string
+        fastestLap:
+          type: string
+        consistency:
+          type: number
+        topSpeed:
+          type: number
+        racePace:
+          type: number
+
+    LapComparison:
+      type: object
+      required: [lap]
+      properties:
+        lap:
+          type: integer
+        times:
+          type: object
+
+    SectorAnalysis:
+      type: object
+      required: [drivers]
+      properties:
+        drivers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverSectors"
+
+    DriverSectors:
+      type: object
+      required: [driverId, driverCode, constructorColor, s1Avg, s2Avg, s3Avg]
+      properties:
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        constructorColor:
+          type: string
+        s1Avg:
+          type: number
+        s2Avg:
+          type: number
+        s3Avg:
+          type: number
+
+    TyreSummary:
+      type: object
+      required: [driverId, driverCode, constructorColor, stints]
+      properties:
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        constructorColor:
+          type: string
+        stints:
+          type: array
+          items:
+            $ref: "#/components/schemas/TyreStint"
+
+    TyreStint:
+      type: object
+      required: [compound, startLap, endLap, laps]
+      properties:
+        compound:
+          type: string
+        startLap:
+          type: integer
+        endLap:
+          type: integer
+        laps:
+          type: integer
+
+    PredictionInput:
+      type: object
+      required: [circuitId, season, round]
+      properties:
+        circuitId:
+          type: string
+        season:
+          type: string
+        round:
+          type: integer
+        weatherCondition:
+          type: string
+          enum: [dry, wet, mixed]
+        temperature:
+          type: ["number", "null"]
+        humidity:
+          type: ["number", "null"]
+        windSpeed:
+          type: ["number", "null"]
+        tyreCompounds:
+          type: array
+          items:
+            type: string
+        safetyCarProbability:
+          type: ["number", "null"]
+
+    DriverPrediction:
+      type: object
+      required: [driverId, driverCode, driverName, constructorId, constructorName, constructorColor, winProbability, podiumProbability, factors]
+      properties:
+        driverId:
+          type: string
+        driverCode:
+          type: string
+        driverName:
+          type: string
+        constructorId:
+          type: string
+        constructorName:
+          type: string
+        constructorColor:
+          type: string
+        winProbability:
+          type: number
+        podiumProbability:
+          type: number
+        predictedPosition:
+          type: integer
+        factors:
+          $ref: "#/components/schemas/PredictionFactors"
+
+    PredictionFactors:
+      type: object
+      required: [recentForm, circuitHistory, qualifyingPace, tyreManagement, weatherAdaptability, carPerformance]
+      properties:
+        recentForm:
+          type: number
+        circuitHistory:
+          type: number
+        qualifyingPace:
+          type: number
+        tyreManagement:
+          type: number
+        weatherAdaptability:
+          type: number
+        carPerformance:
+          type: number
+
+    PredictionResult:
+      type: object
+      required: [circuitId, raceName, weatherCondition, predictions, modelConfidence, keyInsights]
+      properties:
+        circuitId:
+          type: string
+        raceName:
+          type: string
+        weatherCondition:
+          type: string
+        predictions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverPrediction"
+        modelConfidence:
+          type: number
+        keyInsights:
+          type: array
+          items:
+            type: string
+
+    SeasonSummary:
+      type: object
+      required: [season, racesCompleted, totalRaces, leaderDriver, leaderConstructor, mostWins, mostPodiums, closestBattle]
+      properties:
+        season:
+          type: string
+        racesCompleted:
+          type: integer
+        totalRaces:
+          type: integer
+        leaderDriver:
+          type: string
+        leaderDriverPoints:
+          type: number
+        leaderConstructor:
+          type: string
+        leaderConstructorPoints:
+          type: number
+        mostWins:
+          type: string
+        mostWinsCount:
+          type: integer
+        mostPodiums:
+          type: string
+        mostPodiumsCount:
+          type: integer
+        closestBattle:
+          type: string
+        pointsGap:
+          type: number
