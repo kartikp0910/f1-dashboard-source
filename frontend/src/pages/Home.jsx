@@ -37,10 +37,11 @@ export default function Home({ apiBase = 'http://localhost:8000' }) {
           <span className="eyebrow">Live F1 command center</span>
           <h1>Championship data, predictive race intelligence, and telemetry in one cockpit.</h1>
           <p>
-            Current standings, upcoming rounds, prediction inputs, and session telemetry refresh automatically from live API sources.
+            A premium Formula 1 command center with live track positions, driver profiles, constructor tech, race predictions, telemetry, and paddock updates.
           </p>
           <div className="hero-actions">
-            <button type="button" className="btn btn-primary" onClick={() => { window.location.hash = 'predict'; }}>Run prediction</button>
+            <button type="button" className="btn btn-primary" onClick={() => { window.location.hash = 'race-center'; }}>Open race center</button>
+            <button type="button" className="btn btn-secondary" onClick={() => { window.location.hash = 'garage'; }}>View garage</button>
             <button type="button" className="btn btn-secondary" onClick={refresh} disabled={refreshing}>
               {refreshing ? 'Refreshing...' : 'Refresh live data'}
             </button>
@@ -85,6 +86,28 @@ export default function Home({ apiBase = 'http://localhost:8000' }) {
           <p>Races tracked this season</p>
           <strong>{totalWins} wins recorded</strong>
         </article>
+      </section>
+
+      <section className="section">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Premium modules</span>
+            <h2>Race intelligence surfaces</h2>
+          </div>
+        </div>
+        <div className="module-grid">
+          {[
+            ['race-center', 'Live Race Center', 'Continuous track positions, gaps, weather, race control, and driver location markers.'],
+            ['drivers', 'Driver Profiles', 'Headshots, team colors, standing context, form score, points, wins, and search.'],
+            ['garage', 'Constructor Garage', 'Car specs, 3D upgrade viewer, and race-weekend development timeline.'],
+            ['news', 'News Hub', 'Official F1 links, technical updates, FIA documents, and strategy watchlist.'],
+          ].map(([path, title, copy]) => (
+            <button key={path} type="button" className="module-card" onClick={() => { window.location.hash = path; }}>
+              <span>{title}</span>
+              <p>{copy}</p>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="section">

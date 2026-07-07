@@ -2,7 +2,19 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import health, drivers, races, standings, predictions, season, telemetry
+from app.routes import (
+    constructors,
+    drivers,
+    health,
+    live,
+    news,
+    predictions,
+    profiles,
+    races,
+    season,
+    standings,
+    telemetry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +41,10 @@ app.include_router(standings.router)
 app.include_router(predictions.router)
 app.include_router(season.router)
 app.include_router(telemetry.router)
+app.include_router(live.router)
+app.include_router(profiles.router)
+app.include_router(constructors.router)
+app.include_router(news.router)
 
 
 @app.get("/")

@@ -1,8 +1,8 @@
 """Driver endpoints"""
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Query
 from app.models import DriverStandingResponse
-from app.lib.f1_api import fetch_ergast, get_constructor_color
+from app.lib.fastf1_provider import FastF1Unavailable, get_current_driver_standings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,42 +11,13 @@ router = APIRouter()
 
 @router.get("/drivers", response_model=List[DriverStandingResponse])
 async def get_drivers(season: str = Query("current")):
-    """Get list of drivers with current standings"""
+    """Get list of drivers with current FastF1 standings."""
     try:
-        drivers_data, standings_data = await fetch_all_drivers_data(season)
-        
-        drivers = drivers_data.get("MRData", {}).get("DriverTable", {}).get("Drivers", [])
-        standings = standings_data.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [{}])[0].get("DriverStandings", [])
-        
-        standing_map = {s["Driver"]["driverId"]: s for s in standings}
-        
-        result = []
-        for driver in drivers:
-            standing = standing_map.get(driver["driverId"], {})
-            result.append(DriverStandingResponse(
-                driver_id=driver["driverId"],
-                code=driver.get("code", driver["driverId"][:3].upper()),
-                given_name=driver["givenName"],
-                family_name=driver["familyName"],
-                nationality=driver["nationality"],
-                date_of_birth=driver.get("dateOfBirth"),
-                points=float(standing.get("points", 0)),
-                position=int(standing.get("position", 0)),
-                wins=int(standing.get("wins", 0)),
-                constructor_id=standing.get("Constructors", [{}])[0].get("constructorId"),
-                constructor_name=standing.get("Constructors", [{}])[0].get("name"),
-                constructor_color=get_constructor_color(standing.get("Constructors", [{}])[0].get("constructorId"))
-            ))
-        
-        return result
+        year = None if season == "current" else int(season)
+        return await get_current_driver_standings(year)
+    except FastF1Unavailable as e:
+        logger.warning("FastF1 unavailable for drivers: %s", e)
+        return []
     except Exception as e:
-        logger.error(f"Error fetching drivers: {e}")
-        raise
-
-
-async def fetch_all_drivers_data(season: str):
-    """Fetch drivers and standings data"""
-    import asyncio
-    drivers_task = fetch_ergast(f"/{season}/drivers.json?limit=30")
-    standings_task = fetch_ergast(f"/{season}/driverStandings.json?limit=30")
-    return await asyncio.gather(drivers_task, standings_task)
+        logger.warning("FastF1 driver fetch failed: %s", e)
+        return []

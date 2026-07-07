@@ -4,3 +4,4 @@ pydantic==2.5.0
 httpx==0.25.1
 python-dotenv==1.0.0
 cors==1.0.1
+fastf1==3.8.1

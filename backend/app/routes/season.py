@@ -2,6 +2,7 @@
 from typing import List
 from fastapi import APIRouter
 from app.models import SeasonResponse
+from app.lib.demo_data import demo_seasons
 from app.lib.f1_api import fetch_ergast
 import logging
 
@@ -21,5 +22,5 @@ async def get_seasons():
             for s in seasons
         ]
     except Exception as e:
-        logger.error(f"Error fetching seasons: {e}")
-        raise
+        logger.warning("Error fetching seasons, returning demo data: %s", e)
+        return demo_seasons()

@@ -6,6 +6,10 @@ import RaceDetail from './pages/RaceDetail';
 import Calendar from './pages/Calendar';
 import Predict from './pages/Predict';
 import Telemetry from './pages/Telemetry';
+import RaceCenter from './pages/RaceCenter';
+import DriverProfiles from './pages/DriverProfiles';
+import Garage from './pages/Garage';
+import NewsHub from './pages/NewsHub';
 import NotFound from './pages/NotFound';
 import './styles/app.css';
 
@@ -53,10 +57,18 @@ function App() {
         return <RaceDetail raceId={params.id} apiBase={API_BASE_URL} />;
       case 'calendar':
         return <Calendar apiBase={API_BASE_URL} />;
+      case 'race-center':
+        return <RaceCenter apiBase={API_BASE_URL} />;
       case 'predict':
         return <Predict apiBase={API_BASE_URL} />;
       case 'telemetry':
         return <Telemetry apiBase={API_BASE_URL} />;
+      case 'drivers':
+        return <DriverProfiles apiBase={API_BASE_URL} />;
+      case 'garage':
+        return <Garage apiBase={API_BASE_URL} />;
+      case 'news':
+        return <NewsHub apiBase={API_BASE_URL} />;
       default:
         return <NotFound />;
     }

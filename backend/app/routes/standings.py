@@ -2,7 +2,7 @@
 from typing import List
 from fastapi import APIRouter, Query
 from app.models import DriverStandingResponse
-from app.lib.f1_api import fetch_ergast, get_constructor_color
+from app.lib.fastf1_provider import FastF1Unavailable, get_current_driver_standings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,31 +11,13 @@ router = APIRouter()
 
 @router.get("/standings", response_model=List[DriverStandingResponse])
 async def get_standings(season: str = Query("current")):
-    """Get current championship standings"""
+    """Get current championship standings from FastF1."""
     try:
-        data = await fetch_ergast(f"/{season}/driverStandings.json?limit=25")
-        standings = data.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [{}])[0].get("DriverStandings", [])
-        
-        result = []
-        for standing in standings:
-            driver = standing["Driver"]
-            constructor = standing.get("Constructors", [{}])[0]
-            result.append(DriverStandingResponse(
-                driver_id=driver["driverId"],
-                code=driver.get("code", driver["driverId"][:3].upper()),
-                given_name=driver["givenName"],
-                family_name=driver["familyName"],
-                nationality=driver["nationality"],
-                date_of_birth=driver.get("dateOfBirth"),
-                points=float(standing["points"]),
-                position=int(standing["position"]),
-                wins=int(standing["wins"]),
-                constructor_id=constructor.get("constructorId"),
-                constructor_name=constructor.get("name"),
-                constructor_color=get_constructor_color(constructor.get("constructorId"))
-            ))
-        
-        return result
+        year = None if season == "current" else int(season)
+        return await get_current_driver_standings(year)
+    except FastF1Unavailable as e:
+        logger.warning("FastF1 unavailable for standings: %s", e)
+        return []
     except Exception as e:
-        logger.error(f"Error fetching standings: {e}")
-        raise
+        logger.warning("FastF1 standings fetch failed: %s", e)
+        return []

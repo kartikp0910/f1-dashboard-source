@@ -5,6 +5,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException
 
+from app.lib.demo_data import demo_driver_standings, demo_races
 from app.lib.f1_api import fetch_ergast, get_constructor_color
 from app.models import (
     PredictRaceWinnerBody,
@@ -96,11 +97,12 @@ async def predict_race_winner(body: PredictRaceWinnerBody):
             model_confidence=confidence,
             key_insights=build_insights(final_predictions, body.weather_condition, body.circuit_id, circuit_boosts, bool(qualifying_order)),
         )
-    except HTTPException:
-        raise
+    except HTTPException as exc:
+        logger.warning("Live prediction data unavailable, returning demo prediction: %s", exc.detail)
+        return build_demo_prediction(body)
     except Exception as exc:
-        logger.error("Error predicting race winner: %s", exc)
-        raise HTTPException(status_code=500, detail="Failed to generate prediction from live data")
+        logger.warning("Error predicting race winner, returning demo prediction: %s", exc)
+        return build_demo_prediction(body)
 
 
 def build_session_position_map(data: dict, key: str) -> dict:
@@ -241,3 +243,60 @@ def build_insights(
         insights.append(f"{leader.driver_code} and {predictions[1].driver_code} are separated by less than five percentage points.")
 
     return insights
+
+
+def build_demo_prediction(body: PredictRaceWinnerBody) -> RaceWinnerPredictionResponse:
+    standings = demo_driver_standings()
+    races = demo_races()
+    race = next((item for item in races if item.round == body.round), races[0])
+    leader_points = max(float(standings[0].points or 1), 1)
+    scores = []
+
+    for index, driver in enumerate(standings[:20]):
+        form = max(0.08, float(driver.points or 0) / leader_points)
+        weather = 0.72 if body.weather_condition == "dry" else 0.62
+        circuit = 0.54 + max(0, 8 - index) * 0.025
+        tyre = 0.58 + max(0, 8 - index) * 0.02
+        car = max(0.1, 1 - index / max(len(standings) - 1, 1))
+        score = form * 0.38 + car * 0.22 + circuit * 0.14 + tyre * 0.12 + weather * 0.08
+        scores.append((driver, score, form, circuit, tyre, weather, car))
+
+    total = sum(item[1] for item in scores) or 1
+    predictions = []
+    for position, (driver, score, form, circuit, tyre, weather, car) in enumerate(scores, start=1):
+        win_probability = round((score / total) * 100) / 100
+        podium_probability = min(0.95, round((win_probability * 2.2 + max(0, 4 - position) * 0.06) * 100) / 100)
+        predictions.append(
+            PredictionResult(
+                driver_id=driver.driver_id,
+                driver_code=driver.code,
+                driver_name=f"{driver.given_name} {driver.family_name}",
+                constructor_id=driver.constructor_id or "",
+                constructor_name=driver.constructor_name or "",
+                constructor_color=driver.constructor_color,
+                win_probability=win_probability,
+                podium_probability=podium_probability,
+                predicted_position=position,
+                factors=PredictionFactor(
+                    recent_form=round(form * 100) / 100,
+                    circuit_history=round(circuit * 100) / 100,
+                    qualifying_pace=round(car * 0.9 * 100) / 100,
+                    tyre_management=round(tyre * 100) / 100,
+                    weather_adaptability=round(weather * 100) / 100,
+                    car_performance=round(car * 100) / 100,
+                ),
+            )
+        )
+
+    return RaceWinnerPredictionResponse(
+        circuit_id=body.circuit_id,
+        race_name=race.race_name,
+        weather_condition=body.weather_condition,
+        predictions=predictions,
+        model_confidence=0.58,
+        key_insights=[
+            "Provider data is unavailable, so RaceIQ is showing a schema-valid demo prediction.",
+            "Live mode will blend standings, qualifying, race results, weather, safety-car probability, and circuit history.",
+            f"Safety-car probability is set to {round(body.safety_car_probability * 100)}%.",
+        ],
+    )

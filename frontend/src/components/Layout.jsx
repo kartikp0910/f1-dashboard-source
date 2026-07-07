@@ -3,10 +3,14 @@ import '../styles/layout.css';
 
 const navItems = [
   { label: 'Overview', path: 'home', icon: 'OV' },
-  { label: 'Standings', path: 'standings', icon: 'ST' },
-  { label: 'Calendar', path: 'calendar', icon: 'CA' },
+  { label: 'Race Center', path: 'race-center', icon: 'RC' },
+  { label: 'Drivers', path: 'drivers', icon: 'DR' },
+  { label: 'Garage', path: 'garage', icon: 'CG' },
   { label: 'Predictions', path: 'predict', icon: 'PR' },
   { label: 'Telemetry', path: 'telemetry', icon: 'TM' },
+  { label: 'Standings', path: 'standings', icon: 'ST' },
+  { label: 'Calendar', path: 'calendar', icon: 'CA' },
+  { label: 'News', path: 'news', icon: 'NW' },
 ];
 
 export default function Layout({ children, currentPage, onNavigate }) {
